@@ -7,10 +7,20 @@ package jp.dartsclone.details;
 import java.util.ArrayList;
 
 /**
- *
+ * 有向非循环字图(Directed Acyclic Word Graph)的构建器
  * @author
  */
 class DawgBuilder {
+    private static final int INITIAL_TABLE_SIZE = 1 << 10;
+    private final ArrayList<DawgNode> _nodes = new ArrayList<DawgNode>();
+    private final AutoIntPool _units = new AutoIntPool();
+    private final AutoBytePool _labels = new AutoBytePool();
+    private final BitVector _isIntersections = new BitVector();
+    private final AutoIntPool _table = new AutoIntPool();
+    private final AutoIntPool _nodeStack = new AutoIntPool();
+    private final AutoIntPool _recycleBin = new AutoIntPool();
+    private int _numStates;
+
     int root() {
         return 0;
     }
@@ -55,14 +65,20 @@ class DawgBuilder {
     }
     
     void init() {
+        // 创建一个可自动增长的int池,大小为2^10,并全部指定结果为0
+        // TODO table有什么用
         _table.resize(INITIAL_TABLE_SIZE, 0);
-        
+        // 添加节点
+        // TODO 节点是什么
         appendNode();
+        // 添加单元
+        // TODO 单元是什么
         appendUnit();
-        
+        // 这个表示啥
         _numStates = 1;
-        
+
         _nodes.get(0).label = (byte)0xFF;
+        // TODO 节点栈是什么
         _nodeStack.add(0);
     }
     
@@ -153,12 +169,18 @@ class DawgBuilder {
     }
     
     static class DawgNode {
+        // 子节点
         int child;
+        // 兄弟
         int sibling;
+        // 标签
         byte label;
+        // 是否有状态
         boolean isState;
+        // 是否有兄弟
         boolean hasSibling;
-        
+
+        // 节点置空
         void reset() {
             child = 0;
             sibling = 0;
@@ -166,11 +188,13 @@ class DawgBuilder {
             isState = false;
             hasSibling = false;
         }
-        
+
+        // 获取子节点值
         int getValue() {
             return child;
         }
-        
+
+        // 设置子节点值
         void setValue(int value) {
             child = value;
         }
@@ -343,15 +367,26 @@ class DawgBuilder {
         
         return _isIntersections.size() - 1;
     }
-    
+
+    /**
+     * 添加一个节点,并返回节点ID
+     * @return
+     */
     private int appendNode() {
         int id;
+        // 如果回收bin是空的
+        // 返回的id是节点的大小，并创建一个节点添加到节点列表中
         if (_recycleBin.empty()) {
             id = _nodes.size();
             _nodes.add(new DawgNode());
-        } else {
+        }
+        // 如果回收bin 不为空
+        else {
+            // id是回收bin的最后一个节点值
             id = _recycleBin.get(_recycleBin.size() - 1);
+            // 获取节点列表的指定值并进行重置
             _nodes.get(id).reset();
+            // 并将回收bin的最后一个尾节点删除
             _recycleBin.deleteLast();
         }
         return id;
@@ -371,13 +406,5 @@ class DawgBuilder {
         return key;
     }
     
-    private static final int INITIAL_TABLE_SIZE = 1 << 10;
-    private ArrayList<DawgNode> _nodes = new ArrayList<DawgNode>();
-    private AutoIntPool _units = new AutoIntPool();
-    private AutoBytePool _labels = new AutoBytePool();
-    private BitVector _isIntersections = new BitVector();
-    private AutoIntPool _table = new AutoIntPool();
-    private AutoIntPool _nodeStack = new AutoIntPool();
-    private AutoIntPool _recycleBin = new AutoIntPool();
-    private int _numStates;
+
 }

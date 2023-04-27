@@ -6,6 +6,7 @@ package jp.dartsclone.details;
 
 /**
  * Memory management of resizable array.
+ * 这个是byte的ArrayList的简单实现，存储的是基本类型，所以占用量会少很多
  * @author 
  */
 class AutoBytePool {

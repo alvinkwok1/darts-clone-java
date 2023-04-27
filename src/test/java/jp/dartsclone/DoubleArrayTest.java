@@ -8,6 +8,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -19,8 +20,11 @@ import org.junit.*;
  * @author manabe
  */
 public class DoubleArrayTest {
+    // 有效的key数量-65536
     private static final int NUM_VALID_KEYS = 1 << 16;
+    // 无效的key的数量- 131072
     private static final int NUM_INVALID_KEYS = 1 << 17;
+    // 最大结果集数量
     private static final int MAX_NUM_RESULTS = 6;
     
     public DoubleArrayTest() {
@@ -44,8 +48,10 @@ public class DoubleArrayTest {
     
     @Test
     public void testMain() {
+        // 数据准备
         SortedSet<byte[]> validKeys = generateValidKeys(NUM_VALID_KEYS);
         Set<byte[]> invalidKeys = generateInvalidKeys(NUM_INVALID_KEYS, validKeys);
+        // 执行测试
         testDarts(validKeys, invalidKeys);
     }
     
@@ -54,14 +60,15 @@ public class DoubleArrayTest {
         byte[][] byteInvalidKeys = invalidKeys.toArray(new byte[0][0]);
                 
         int[] values = new int[byteKeys.length];
-        
+        // 为每一个key分配一个ID
         int keyId = 0;
         for (int i = 0; i < values.length; ++i) {
             values[i] = keyId;
             ++keyId;
         }
-        
+        // 初始化tire
         DoubleArray dict = new DoubleArray();
+        // 传入所有的有效key进行构建
         dict.build(byteKeys, null);
         testDict(dict, byteKeys, values, byteInvalidKeys);
         
@@ -120,56 +127,52 @@ public class DoubleArrayTest {
     }
     
     private SortedSet<byte[]> generateValidKeys(int numKeys) {
-        SortedSet<byte[]> validKeys = new TreeSet<byte[]>(new Comparator<byte[]>() {
-            @Override
-            public int compare(byte[] left, byte[] right) {
-                for (int i = 0, j = 0; i < left.length && j < right.length; i++, j++) {
-                    int a = (left[i] & 0xff);
-                    int b = (right[j] & 0xff);
-                    if (a != b) {
-                        return a - b;
-                    }
+        // 创建一个排序集合，并实现排序逻辑
+        // 逐字进行比较，如果不等且a-b>0，则要发生交换，即a与b位置进行交换，得到的结果是一个升序结果
+        SortedSet<byte[]> validKeys = new TreeSet<>((left, right) -> {
+            for (int i = 0, j = 0; i < left.length && j < right.length; i++, j++) {
+                int a = (left[i] & 0xff);
+                int b = (right[j] & 0xff);
+                if (a != b) {
+                    return a - b;
                 }
-                return left.length - right.length;
-            }            
+            }
+            return left.length - right.length;
         });
-        
+        // 创建一个随机数并制定随机种子
         Random random = new Random();
         random.setSeed(1);
+        // 用来存储key
         StringBuilder keyBuilder = new StringBuilder();
         while (validKeys.size() < numKeys) {
             keyBuilder.setLength(0);
             int length = random.nextInt(8) + 1;
+            // 生成一个随机key
             for (int i = 0; i < length; ++i) {
                 keyBuilder.append((char)('A' + random.nextInt(26)));
             }
-            try {
-                validKeys.add(keyBuilder.toString().getBytes("UTF-8"));
-            } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(DoubleArrayTest.class.getName()).log(Level.SEVERE, null, ex);
-            }
+            // 使用utf8编码存储到key集合中
+            validKeys.add(keyBuilder.toString().getBytes(StandardCharsets.UTF_8));
         }
         return validKeys;
     }
     
     private Set<byte[]> generateInvalidKeys(int numKeys, Set<byte[]> validKeys) {
-        Set<byte[]> invalidKeys = new HashSet<byte[]>();
+        Set<byte[]> invalidKeys = new HashSet<>();
         Random random = new Random();
         StringBuilder keyBuilder = new StringBuilder();
         while (invalidKeys.size() < numKeys) {
             keyBuilder.setLength(0);
             int length = random.nextInt(8) + 1;
+            // 创建无效key
             for (int i = 0; i < length; ++i) {
                 keyBuilder.append((char)('A' + random.nextInt(26)));
             }
+            // 无效key应该是不包含在有效key里面的
             byte[] generatedKey;
-            try {
-                generatedKey = keyBuilder.toString().getBytes("UTF-8");
-                if (!validKeys.contains(generatedKey)) {
-                    invalidKeys.add(generatedKey);
-                }
-            } catch (UnsupportedEncodingException ex) {
-                Logger.getLogger(DoubleArrayTest.class.getName()).log(Level.SEVERE, null, ex);
+            generatedKey = keyBuilder.toString().getBytes(StandardCharsets.UTF_8);
+            if (!validKeys.contains(generatedKey)) {
+                invalidKeys.add(generatedKey);
             }
         }
         return invalidKeys;

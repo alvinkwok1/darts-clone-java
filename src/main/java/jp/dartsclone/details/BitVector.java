@@ -5,10 +5,19 @@
 package jp.dartsclone.details;
 
 /**
- *
+ * 位向量
  * @author
  */
 class BitVector {
+    // 单元池
+    private AutoIntPool _units = new AutoIntPool();
+    // 排名
+    private int[] _ranks;
+    //
+    private int _numOnes;
+    // 大小
+    private int _size;
+
     boolean get(int id) {
         return (_units.get(id / UNIT_SIZE) >>> (id % UNIT_SIZE) & 1) == 1;
     }
@@ -70,9 +79,4 @@ class BitVector {
         unit += unit >>> 16;
         return unit & 0xFF;
      }
-    
-    private AutoIntPool _units = new AutoIntPool();
-    private int[] _ranks;
-    private int _numOnes;
-    private int _size;
 }

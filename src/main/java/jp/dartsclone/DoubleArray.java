@@ -18,8 +18,11 @@ import jp.dartsclone.details.Keyset;
  */
 public class DoubleArray {
     public void build(byte[][] keys, int[] values) {
+        // 创建一个key-value集合
         Keyset keyset = new Keyset(keys, values);
+        // 创建Tire的构建器
         DoubleArrayBuilder builder = new DoubleArrayBuilder();
+        // 执行词典构建
         builder.build(keyset);
         
         _array = builder.copy();
